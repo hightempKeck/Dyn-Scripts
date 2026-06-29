@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dyndrite-docs": {
+      "type": "http",
+      "url": "https://mcp.biel.ai/v2/6ydpcls68d/mcp?metadata=mcp"
+    }
+  }
+}
