@@ -29,8 +29,8 @@ dyn.printer.height = 200.00
 dyn.printer.plate_thickness = 20.00
 dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 
-# Configure SLM 125 Envelope
-dyn.target_machine = dyn.AconityMidi()
+# Configure Renishaw AM500Q Envelope
+dyn.target_machine = dyn.Renam500Q()
 dyn.printer.plate_thickness = 20.00
 
 brep_parameters = None
@@ -46,6 +46,10 @@ cube = dyn.ops.load_part(path=r"C:\Users\alwoocay\Documents\Dyndrite\Thermal_Len
      brep_sampling_parameters=brep_parameters,
      mesh_healing_parameters=None)
 cube_rgn0=cube.region[0]
+
+dyn.ops.size(part=cube,
+     scale=dyn.Vector3(0.424, 0.424, 1),
+     pivot=None)
 
 brep_parameters = None
 
@@ -104,31 +108,31 @@ segmentation = zoner.create_volumetric_segmentation_strategy(core_seg0, )
 # Create two contours
 contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
 
-##BUILD STYLE PARAMETERS CHANGED TO MATCH ACONITY FORMAT
-normal_melt = toolpather.create_build_style(
-    cli_plus_params=dyn.CliPlusToolParameters.build({
-        "laser_power": ("watt", "double", 285),
-        "mark_speed": ("mm/s", "double", 1000),
-    }))
+##BUILD STYLE - ACONITY FORMAT
+# normal_melt = toolpather.create_build_style(
+#     renishaw_params=dyn.RenishawToolParameters(
+#         laser_index=0,        
+#         jump_delay_us=0,
+#         laser_focus_mm=0,
+#         laser_power_w=285,
+#         laser_speed_mm_per_s=1000,
+#         point_exposure_time_us=0,
+#         point_distance_um=0,
+#     ))
 
-# bst2 = toolpather.create_build_style(
-#     eos_openjz_params=dyn.EosOpenJzToolParameters(
-#         exposure_set="",
-#         laser_index=0
-#     ))
-# bst2 = toolpather.create_build_style(
-#     eos_params=dyn.EosToolParameters(
-#         exposure_set="",
-#         laser_index=0,
-#         laser_power_w=0,
-#         laser_speed_mm_per_s=0,
-#         laser_focus=0,
-#         exposed_depth_mm=None,
-#         power_delay_us=0,
-#         use_skywriting=False,
-#         pulse_wave=None,
-#         beam_profile_id=None
-#     ))
+
+normal_melt = toolpather.create_build_style(
+    renishaw_params=dyn.RenishawToolParameters(
+        laser_index=1,        
+        jump_delay_us=0,
+        laser_focus_mm=0,
+        laser_power_w=285,
+        laser_speed_mm_per_s=1000, ##"UNUSED" PER DOCUMENTATION (no affect on output?)
+        point_exposure_time_us=0,
+        point_distance_um=0,
+    ))
+
+
 
 
 # Set up config for Schema
@@ -164,7 +168,6 @@ output_path = os.path.join(output_dir, 'LensExample.slm')
 
 vp.slicing_thickness=1
 vp.slicing_resolution=dyn.Vector2(0.03,0.03)
-
 # Constain angle to be not with gas flow
 def constraint_to_allowed_windows(angle_rads):
     angle_deg = math.degrees(angle_rads) % 360
@@ -240,7 +243,8 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
 
 directory = "C:/Users/Public/Documents/Dyndrite"
 
-filepath = os.path.join(directory, "dyn_out.ilt")
+filepath = os.path.join(directory, "dyn_LBV_REN.mtt")
+trans_data = "C:/Users/Public/Documents/Dyndrite"
 
 # False: multiple CLI+ streams packaged into one ILT; True: single CLI+ in the ILT
 single_file = False
@@ -248,16 +252,17 @@ single_file = False
 # Write custom build-style parameters into the CLI+ payloads inside the ILT
 write_inline_parameters = True
 
-##ILT WRITER ADDED INSTAED OF SLM
-vp.slice_all(
-    writers=dyn.IltWriter(
-        out_file=filepath,
-        single_file=single_file,
-        write_inline_parameters=write_inline_parameters,
-    ),
-    on_slice = cb
-)
-
+# ##ILT WRITER ADDED INSTAED OF SLM
+# vp.slice_all(
+#     writers=dyn.IltWriter(
+#         out_file=filepath,
+#         single_file=single_file,
+#         write_inline_parameters=write_inline_parameters,
+#     ),
+#     on_slice = cb
+# )
+vp.slice_all(writers=dyn.MttWriter(filepath, trans_data),
+             on_slice=cb)
 # callbacks
 
 
