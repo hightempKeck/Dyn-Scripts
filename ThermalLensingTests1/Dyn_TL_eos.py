@@ -32,6 +32,7 @@ dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 # Configure EOS M 290 1kW Envelope
 dyn.target_machine = dyn.EosM290_1kw()
 dyn.printer.plate_thickness = 20.00
+dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 
 brep_parameters = None
 
@@ -76,12 +77,11 @@ cylinder_right = dyn.ops.load_part(path=r"C:\Users\Tech Engineering\Documents\Hy
 cylinder_right_rgn0=cylinder_right.region[0]
 
 dyn.ops.place(part=cube,location=dyn.Vector3(0,0,0))
-dyn.ops.align_to_plate(part=dyn.part[0],
-     offset=0.0)
+dyn.ops.align_to_plate(part=dyn.part[0], offset=0.0)
 
 # cube limits
 cube_min_x = cube.world_limits.min.x
-cube_max_x = cube.world_limits.max.x 
+cube_max_x = cube.world_limits.max.x
 
 # L/R half widths
 left_halfw = part_halfwidth(cylinder_left)
@@ -95,7 +95,9 @@ left_target_center_x = left_target_max - left_halfw
 right_target_center_x = right_target_min + right_halfw
 
 dyn.ops.place(part=cylinder_left,location=dyn.Vector3(left_target_center_x,0,0))
+dyn.ops.align_to_plate(part=dyn.part[1], offset=0.0)
 dyn.ops.place(part=cylinder_right,location=dyn.Vector3(right_target_center_x,0,0))
+dyn.ops.align_to_plate(part=dyn.part[2], offset=0.0)
 
 # Create the zones
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
