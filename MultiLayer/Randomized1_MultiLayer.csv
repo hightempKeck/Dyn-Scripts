@@ -1,0 +1,16 @@
+Measurement order,Plate order,Scan order,Layer thickness,Number of layers,Replicate
+1,14,15,0.03,60,Randomized_1
+2,9,13,0.03,60,Randomized_1
+3,13,2,0.03,45,Randomized_1
+4,8,7,0.03,45,Randomized_1
+5,7,9,0.03,30,Randomized_1
+6,5,6,0.03,100,Randomized_1
+7,15,1,0.03,100,Randomized_1
+8,12,8,0.03,30,Randomized_1
+9,10,14,0.03,100,Randomized_1
+10,6,4,0.03,15,Randomized_1
+11,11,10,0.03,15,Randomized_1
+12,3,11,0.03,45,Randomized_1
+13,1,5,0.03,15,Randomized_1
+14,2,12,0.03,30,Randomized_1
+15,4,3,0.03,60,Randomized_1
