@@ -35,10 +35,10 @@ dyn.printer.plate_thickness = 20.00
 
 # Laser center positions [x, y] in mm — laser assignment handled on machine
 LASER_POSITIONS = [
-    [ 25.4,  27.5],   # L1
-    [ 24.5, -28.6],   # L2
-    [-26.4, -27.1],   # L3
-    [-25.8,  25.0],   # L4
+    [ 70,  70],   # L1
+    [ -70, 70],   # L2
+    [-70, -70],   # L3
+    [70, -70],   # L4
 ]
 
 def part_halfwidth(part):
