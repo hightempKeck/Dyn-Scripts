@@ -29,8 +29,8 @@ dyn.printer.height = 200.00
 dyn.printer.plate_thickness = 20.00
 dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 
-# Configure SLM 125 Envelope
-dyn.target_machine = dyn.AconityMidi()
+# Configure SLM 280 Envelope
+dyn.target_machine = dyn.Slm280()
 dyn.printer.plate_thickness = 20.00
 
 brep_parameters = None
@@ -48,6 +48,10 @@ cube = dyn.ops.load_part(path=r"C:\Users\alwoocay\Documents\Dyndrite\Thermal_Len
 cube_rgn0=cube.region[0]
 
 brep_parameters = None
+
+dyn.ops.size(part=cube,
+     scale=dyn.Vector3(0.424, 0.424, 1),
+     pivot=None)
 
 cylinder_left = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Lensing_Cyl.stl",
      auto_center=True,
@@ -104,16 +108,15 @@ segmentation = zoner.create_volumetric_segmentation_strategy(core_seg0, )
 # Create two contours
 contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
 
-##BUILD STYLE PARAMETERS CHANGED TO MATCH ACONITY FORMAT
-normal_melt = toolpather.create_build_style(
-    renishaw_params=dyn.RenishawToolParameters(
-        laser_index=0,        
-        jump_delay_us=0,
+##BUILD STYLE PARAMETERS CHANGED TO MATCH SLM280 FORMAT
+
+normal_melt= toolpather.create_build_style(
+    slm_params=dyn.SlmToolParameters(
+        laser_index=1,
         laser_focus_mm=0,
         laser_power_w=285,
         laser_speed_mm_per_s=1000,
-        point_exposure_time_us=0,
-        point_distance_um=0,
+        custom_build_style_id=None
     ))
 
 
@@ -226,7 +229,7 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
 
 directory = "C:/Users/Public/Documents/Dyndrite"
 
-filepath = os.path.join(directory, "dyn_out.ilt")
+filepath = os.path.join(directory, "dyn_out.slm")
 
 # False: multiple CLI+ streams packaged into one ILT; True: single CLI+ in the ILT
 single_file = False
@@ -234,12 +237,12 @@ single_file = False
 # Write custom build-style parameters into the CLI+ payloads inside the ILT
 write_inline_parameters = True
 
-##ILT WRITER ADDED INSTAED OF SLM
+##SLM WRITER ADDED INSTEAD OF ILT
 vp.slice_all(
-    writers=dyn.IltWriter(
+    writers=dyn.SlmWriter(
         out_file=filepath,
-        single_file=single_file,
-        write_inline_parameters=write_inline_parameters,
+        #single_file=single_file,
+        #write_inline_parameters=write_inline_parameters,
     ),
     on_slice = cb
 )
