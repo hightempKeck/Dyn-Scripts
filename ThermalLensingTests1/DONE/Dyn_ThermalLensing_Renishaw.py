@@ -135,7 +135,7 @@ def constraint_to_allowed_windows(angle_rads):
         angle_deg = (angle_deg + 90) % 360
     return math.radians(angle_deg)
             
-def make_laser_cb(cube_part, cyl_left_part, cyl_right_part):
+def make_all_lasers_cb(cubes, cyl_lefts, cyl_rights):
     def cb(ctx, writer, layer_idx):
         print("Slicing Layer: " + str(layer_idx))
 
@@ -163,31 +163,32 @@ def make_laser_cb(cube_part, cyl_left_part, cyl_right_part):
             unit_hatch_vector=hatch_unit_vec, angle_limit=math.pi
         )
 
-        cube_geometry_id = ctx.get_geometry_id(obj=cube_part)
-        cyl_left_geometry_id = ctx.get_geometry_id(obj=cyl_left_part)
-        cyl_right_geometry_id = ctx.get_geometry_id(obj=cyl_right_part)
+        for cube_part, cyl_left_part, cyl_right_part in zip(cubes, cyl_lefts, cyl_rights):
+            cube_geometry_id = ctx.get_geometry_id(obj=cube_part)
+            cyl_left_geometry_id = ctx.get_geometry_id(obj=cyl_left_part)
+            cyl_right_geometry_id = ctx.get_geometry_id(obj=cyl_right_part)
 
-        cube_frags = fragments.select_by_geometry_id(geometry_ids={cube_geometry_id})
-        cyl_left_frags = fragments.select_by_geometry_id(geometry_ids={cyl_left_geometry_id})
-        cyl_right_frags = fragments.select_by_geometry_id(geometry_ids={cyl_right_geometry_id})
+            cube_frags = fragments.select_by_geometry_id(geometry_ids={cube_geometry_id})
+            cyl_left_frags = fragments.select_by_geometry_id(geometry_ids={cyl_left_geometry_id})
+            cyl_right_frags = fragments.select_by_geometry_id(geometry_ids={cyl_right_geometry_id})
 
-        cube_hatching = dyn.HatchingParameters(
-            hatch_spacing=0.12,
-            hatch_length=1000,
-            scan_angle=cube_scan_angle,
-            generation_origin=dyn.Vector2(cube_part.world_limits.min.x, cube_part.world_limits.max.y),
-            fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
-            fill_vector=dyn.Vector2(cube_fill_vec[0], cube_fill_vec[1]),
-            fill_to_perimeter=2
-        )
+            cube_hatching = dyn.HatchingParameters(
+                hatch_spacing=0.12,
+                hatch_length=1000,
+                scan_angle=cube_scan_angle,
+                generation_origin=dyn.Vector2(cube_part.world_limits.min.x, cube_part.world_limits.max.y),
+                fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
+                fill_vector=dyn.Vector2(cube_fill_vec[0], cube_fill_vec[1]),
+                fill_to_perimeter=2
+            )
 
-        ctx.hatch_fragments(fragments=cyl_left_frags, hatching_params=cyl_hatching)
-        ctx.hatch_fragments(fragments=cube_frags, hatching_params=cube_hatching)
-        ctx.hatch_fragments(fragments=cyl_right_frags, hatching_params=cyl_hatching)
+            ctx.hatch_fragments(fragments=cyl_left_frags, hatching_params=cyl_hatching)
+            ctx.hatch_fragments(fragments=cube_frags, hatching_params=cube_hatching)
+            ctx.hatch_fragments(fragments=cyl_right_frags, hatching_params=cyl_hatching)
 
-        writer.write_fragments(fragments=cyl_left_frags)
-        writer.write_fragments(fragments=cube_frags)
-        writer.write_fragments(fragments=cyl_right_frags)
+            writer.write_fragments(fragments=cyl_left_frags)
+            writer.write_fragments(fragments=cube_frags)
+            writer.write_fragments(fragments=cyl_right_frags)
 
     return cb
 
@@ -198,10 +199,9 @@ trans_data = "C:/Users/Public/Documents/Dyndrite"
 for i, (cube_i, cyl_left_i, cyl_right_i) in enumerate(zip(all_cubes, all_cyl_lefts, all_cyl_rights)):
     laser_num = i + 1
 
-    # Build style handles are invalidated after each slice_all, so recreate them fresh each iteration
     normal_melt = toolpather.create_build_style(
         renishaw_params=dyn.RenishawToolParameters(
-            laser_index=1,
+            laser_index=laser_num,
             jump_delay_us=0,
             laser_focus_mm=0,
             laser_power_w=285,
@@ -219,14 +219,15 @@ for i, (cube_i, cyl_left_i, cyl_right_i) in enumerate(zip(all_cubes, all_cyl_lef
     schema.set_all_perimeter_configs(config=perimeter_config)
     schema.fill_default_hatch_generation(params=default_hatching)
 
-    for part in all_cubes + all_cyl_lefts + all_cyl_rights:
-        vp.apply_schema(geometry=part, schema=schema, region_segment_mapping=None)
+    vp.apply_schema(geometry=cube_i, schema=schema, region_segment_mapping=None)
+    vp.apply_schema(geometry=cyl_left_i, schema=schema, region_segment_mapping=None)
+    vp.apply_schema(geometry=cyl_right_i, schema=schema, region_segment_mapping=None)
 
-    vp.finalize()
+vp.finalize()
 
-    filepath = os.path.join(directory, f"dyn_LBV_REN_L{laser_num}.mtt")
-    print(f"Slicing L{laser_num} -> {filepath}")
-    vp.slice_all(
-        writers=dyn.MttWriter(filepath, trans_data),
-        on_slice=make_laser_cb(cube_i, cyl_left_i, cyl_right_i)
-    )
+filepath = os.path.join(directory, "dyn_LBV_REN_all.mtt")
+print(f"Slicing all lasers -> {filepath}")
+vp.slice_all(
+    writers=dyn.MttWriter(filepath, trans_data),
+    on_slice=make_all_lasers_cb(all_cubes, all_cyl_lefts, all_cyl_rights)
+)
