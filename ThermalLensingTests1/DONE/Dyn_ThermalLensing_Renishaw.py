@@ -61,7 +61,7 @@ for lx, ly in LASER_POSITIONS:
     cube.region[0]
 
     dyn.ops.size(part=cube,
-         scale=dyn.Vector3(0.424, 0.424, 1),
+         scale=dyn.Vector3(0.424, 0.424, 10),
          pivot=None)
 
     cylinder_left = dyn.ops.load_part(path=r"C:\Users\Tech Engineering\Documents\Hypersonics\Thermal_Lensing_Cyl.stl",
@@ -72,6 +72,10 @@ for lx, ly in LASER_POSITIONS:
          brep_sampling_parameters=brep_parameters,
          mesh_healing_parameters=None)
     cylinder_left.region[0]
+    
+    dyn.ops.size(part=cylinder_left,
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
 
     cylinder_right = dyn.ops.load_part(path=r"C:\Users\Tech Engineering\Documents\Hypersonics\Thermal_Lensing_Cyl.stl",
          auto_center=True,
@@ -81,6 +85,10 @@ for lx, ly in LASER_POSITIONS:
          brep_sampling_parameters=brep_parameters,
          mesh_healing_parameters=None)
     cylinder_right.region[0]
+
+    dyn.ops.size(part=cylinder_right,
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
 
     dyn.ops.place(part=cube, location=dyn.Vector3(lx, ly, 0))
     dyn.ops.align_to_plate(part=cube, offset=0.0)
@@ -106,7 +114,7 @@ for lx, ly in LASER_POSITIONS:
     all_cubes.append(cube)
     all_cyl_lefts.append(cylinder_left)
     all_cyl_rights.append(cylinder_right)
-
+    
 # Create the zones (done once — these persist across finalizations)
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF, width=0.03, color=(255, 0, 0))
 zoner.init_zone(zone_type=zoner.PartZoneType.DOWNSKIN, width=0.03, color=(0, 255, 0))
