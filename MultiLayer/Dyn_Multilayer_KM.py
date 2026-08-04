@@ -22,7 +22,7 @@ square_file_name = os.path.join(os.getcwd(), 'MultiLayer', '10mm_cube.step')  # 
 array_shape = (5, 11)  # shape for the array, adjust as needed ( rows, columns) 
 seperation = 8.0  # separation distance between parts in mm
 brep_parameters = None
-Layer_thickness = 0.05
+Layer_thickness = 0.04
 
 
 
@@ -64,19 +64,19 @@ y_val = array_shape[0] * seperation - (0.5 * seperation)
 index = 0
 
 
-# base_build = dyn.ops.load_part(path=square_file_name,
-#      auto_center=True,
-#      transform=None,
-#      translate_only=None,
-#      open_geometry=False,
-#      brep_sampling_parameters=brep_parameters,
-#      mesh_healing_parameters=None)
-# base_build_rgn=base_build.region[0]
+base_build = dyn.ops.load_part(path=square_file_name,
+     auto_center=True,
+     transform=None,
+     translate_only=None,
+     open_geometry=False,
+     brep_sampling_parameters=brep_parameters,
+     mesh_healing_parameters=None)
+base_build_rgn=base_build.region[0]
 
 
-# dyn.ops.scale(part=base_build,
-#      multiplier=dyn.Vector3(9.2, 4.4, 0.5),
-#      pivot=None)
+dyn.ops.scale(part=base_build,
+     multiplier=dyn.Vector3(9.2, 4.4, 0.5),
+     pivot=None)
 
 # Create array of points from the CSV data
 prt_array = []
@@ -99,7 +99,7 @@ for i in range(array_shape[0]):
         prt0_rgn0=prt0.region[0]     
         # +4 for centering the part in the zone, adjust as needed
         dyn.ops.translate(part=prt0,
-            offset=dyn.Vector3(x_pos+2, y_pos+2, 0.0),
+            offset=dyn.Vector3(x_pos+2, y_pos+2, 5.0),
             pivot=None)
         # Make the part the size and 1mm tall
         dyn.ops.scale(part=prt0,
@@ -183,7 +183,7 @@ schema.set_all_perimeter_configs(config=perimeter_config)
 
 schema.fill_default_hatch_generation(params=default_hatching)
 
-# prt_array.insert(0, base_build)
+prt_array.insert(0, base_build)
 for part in  prt_array:
     vp.apply_schema(geometry=part, schema=schema, region_segment_mapping=None)
 
@@ -248,12 +248,7 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
     writer.write_perimeters(ctx.perimeters)
 
 # Slice output 
-output_dir = r"C:\Users\Public\Documents\Dyndrite"
-
-output_path = os.path.join(output_dir, 'Multilayer_1SquareCP1.slm')
-
-vp.slicing_thickness=0.1
-vp.slicing_resolution=dyn.Vector2(Layer_thickness,Layer_thickness)
+output_path = os.path.join(os.getcwd(), 'MultiLayer', 'Multilayer_1_Part2.slm')
 
 vp.slice_all(
     writers=dyn.SlmWriter(
