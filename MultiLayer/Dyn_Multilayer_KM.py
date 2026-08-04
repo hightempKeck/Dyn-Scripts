@@ -15,12 +15,14 @@ except:
 
 # TODO: INPUT VARIABLES for the Layout, and file
 
-csv_file_path = r'MultiLayer\PreRandomized_MultiLayer.csv'
+# csv_file_path = r'MultiLayer\PreRandomized_MultiLayer.csv'
 # csv_file_path = r'MultiLayer\Randomized1_MultiLayer.csv'
-array_shape = (3, 5)  # shape for the array, adjust as needed ( rows, columns) 
+csv_file_path = r'MultiLayer\MultiLayer_Part2.csv'
+square_file_name = os.path.join(os.getcwd(), 'MultiLayer', '10mm_cube.step')  # Path to the STEP file for the square part
+array_shape = (5, 11)  # shape for the array, adjust as needed ( rows, columns) 
 seperation = 8.0  # separation distance between parts in mm
 brep_parameters = None
-Layer_thickness = 0.04
+Layer_thickness = 0.05
 
 
 
@@ -62,68 +64,70 @@ y_val = array_shape[0] * seperation - (0.5 * seperation)
 index = 0
 
 
-base_build = dyn.ops.load_part(path=r"C:/Users/alwoocay/Dyn Scripts/MultiLayer/10mm_cube.step",
-     auto_center=True,
-     transform=None,
-     translate_only=None,
-     open_geometry=False,
-     brep_sampling_parameters=brep_parameters,
-     mesh_healing_parameters=None)
-base_build_rgn=base_build.region[0]
+# base_build = dyn.ops.load_part(path=square_file_name,
+#      auto_center=True,
+#      transform=None,
+#      translate_only=None,
+#      open_geometry=False,
+#      brep_sampling_parameters=brep_parameters,
+#      mesh_healing_parameters=None)
+# base_build_rgn=base_build.region[0]
 
 
-dyn.ops.scale(part=base_build,
-     multiplier=dyn.Vector3(4.4, 2.8, 1.0),
-     pivot=None)
+# dyn.ops.scale(part=base_build,
+#      multiplier=dyn.Vector3(9.2, 4.4, 0.5),
+#      pivot=None)
 
 # Create array of points from the CSV data
 prt_array = []
 prt_rgn_array = []
-# for i in range(array_shape[0]):
-    # for j in range(array_shape[1]):
-    #     current_layer_amount = Layer_Height[index]
+for i in range(array_shape[0]):
+    for j in range(array_shape[1]):
+        current_layer_amount = Layer_Height[index]
         
-    #     # Calculate the position for the current part
-    #     x_pos = j * seperation - (0.5 * x_val)
-    #     y_pos = i * seperation - (0.5 * y_val)
+        # Calculate the position for the current part
+        x_pos = j * seperation - (0.5 * x_val)
+        y_pos = i * seperation - (0.5 * y_val)
 
-    #     prt0 = dyn.ops.load_part(path=r"C:/Users/alwoocay/Dyn Scripts/MultiLayer/10mm_cube.step",
-    #         auto_center=True,
-    #         transform=None,
-    #         translate_only=None,
-    #         open_geometry=False,
-    #         brep_sampling_parameters=brep_parameters,
-    #         mesh_healing_parameters=None)
-    #     prt0_rgn0=prt0.region[0]     
-    #     # +4 for centering the part in the zone, adjust as needed
-    #     dyn.ops.translate(part=prt0,
-    #         offset=dyn.Vector3(x_pos+2, y_pos+2, 0.0),
-    #         pivot=None)
-    #     # Make the part the size and 1mm tall
-    #     dyn.ops.scale(part=prt0,
-    #         multiplier=dyn.Vector3(0.4, 0.4, 0.1),
-    #         pivot=None)
+        prt0 = dyn.ops.load_part(path=square_file_name,
+            auto_center=True,
+            transform=None,
+            translate_only=None,
+            open_geometry=False,
+            brep_sampling_parameters=brep_parameters,
+            mesh_healing_parameters=None)
+        prt0_rgn0=prt0.region[0]     
+        # +4 for centering the part in the zone, adjust as needed
+        dyn.ops.translate(part=prt0,
+            offset=dyn.Vector3(x_pos+2, y_pos+2, 0.0),
+            pivot=None)
+        # Make the part the size and 1mm tall
+        dyn.ops.scale(part=prt0,
+            multiplier=dyn.Vector3(0.4, 0.4, 0.1),
+            pivot=None)
         
-    #     # this part here should be the height but i cant get it to work and idk why
-    #     # Calculate the scale factor based on current_layer_amount and the original height of the part (10mm)
-    #     if current_layer_amount >=100 or current_layer_amount % 2 ==1:
-    #         total_height = current_layer_amount * (Layer_thickness + 0.0105)  # Add 0.01mm to account for the base plate thickness
-    #     else:
-    #         if current_layer_amount == 30:
-    #             total_height = 11.55 - 10.0
-    #         elif current_layer_amount == 60:
-    #             total_height = 13.0 - 10.0
+        # this part here should be the height but i cant get it to work and idk why
+        # Calculate the scale factor based on current_layer_amount and the original height of the part (10mm)
+        # if current_layer_amount >=100 or current_layer_amount % 2 ==1:
+        total_height = current_layer_amount * (Layer_thickness )  # Add 0.01mm to account for the base plate thickness
+        #     if current_layer_amount == 100:
+        #         total_height -=0.05
+        # else:
+        #     if current_layer_amount == 30:
+        #         total_height = 11.55 - 10.0
+        #     elif current_layer_amount == 60:
+        #         total_height = 13.0 - 10.0
             
         
-    #     print(f"Placing part at row {i}, column {j} with {current_layer_amount} layers and total height {total_height} mm")
-    #     scale_factor = total_height  
-    #     dyn.ops.scale(part=prt0,
-    #         multiplier=dyn.Vector3(1, 1, scale_factor),
-    #         pivot=None)
+        print(f"Placing part at row {i+1}, column {j+1} with {current_layer_amount} layers and total height {total_height} mm")
+        scale_factor = total_height  
+        dyn.ops.scale(part=prt0,
+            multiplier=dyn.Vector3(1, 1, scale_factor),
+            pivot=None)
             
-    #     prt_array.append(prt0)
-    #     prt_rgn_array.append(prt0_rgn0)
-    #     index += 1
+        prt_array.append(prt0)
+        prt_rgn_array.append(prt0_rgn0)
+        index += 1
 
 ##----GOOD UP TO HERE
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
@@ -179,7 +183,7 @@ schema.set_all_perimeter_configs(config=perimeter_config)
 
 schema.fill_default_hatch_generation(params=default_hatching)
 
-prt_array.insert(0, base_build)
+# prt_array.insert(0, base_build)
 for part in  prt_array:
     vp.apply_schema(geometry=part, schema=schema, region_segment_mapping=None)
 
@@ -189,7 +193,7 @@ scan_angle_delta = math.radians(67)  # How much the scan vectors rotate per laye
 def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
 
     # Need ability to find hatching related to segments to update rotation.
-    print("Slicing Layer: " + str(layer_idx) + " at height: " + str(layer_idx * (Layer_thickness + 0.01)) + " mm")
+    print("Slicing Layer: " + str(layer_idx + 1) + " at height: " + str(layer_idx * (Layer_thickness)) + " mm")
     # Print layer height and thickness
     collection = ctx.get_fragments()
     all_segments = ctx.zone_manager.get_all_segments()
@@ -246,9 +250,9 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
 # Slice output 
 output_dir = r"C:\Users\Public\Documents\Dyndrite"
 
-output_path = os.path.join(output_dir, 'Multilayer_1Buildplate.slm')
+output_path = os.path.join(output_dir, 'Multilayer_1SquareCP1.slm')
 
-vp.slicing_thickness=Layer_thickness
+vp.slicing_thickness=0.1
 vp.slicing_resolution=dyn.Vector2(Layer_thickness,Layer_thickness)
 
 vp.slice_all(
