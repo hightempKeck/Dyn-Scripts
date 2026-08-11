@@ -174,6 +174,8 @@ perimeter_config = {
     upskin_seg0:   (bst0, [bst0, bst0]),
 }
 
+vp.slicing_thickness=Layer_thickness
+vp.slicing_resolution=dyn.Vector2(Layer_thickness,Layer_thickness)
 default_hatching = dyn.HatchingParameters(hatch_spacing=0.12,scan_angle=math.radians(135),fill_to_perimeter=2)
 
 schema = toolpather.create_toolpath_schema(segmentation_strategy=segmentation,contour_strategy=contour_strat)
