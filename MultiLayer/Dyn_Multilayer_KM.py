@@ -156,8 +156,8 @@ bst0 = toolpather.create_build_style(
     slm_params=dyn.SlmToolParameters(
         laser_index=1,
         laser_focus_mm=0,
-        laser_power_w=285,
-        laser_speed_mm_per_s=1000,
+        laser_power_w=370,
+        laser_speed_mm_per_s=1420,
         custom_build_style_id=None
     ))
 
@@ -176,6 +176,7 @@ perimeter_config = {
 
 vp.slicing_thickness=Layer_thickness
 vp.slicing_resolution=dyn.Vector2(Layer_thickness,Layer_thickness)
+
 default_hatching = dyn.HatchingParameters(hatch_spacing=0.12,scan_angle=math.radians(135),fill_to_perimeter=2)
 
 schema = toolpather.create_toolpath_schema(segmentation_strategy=segmentation,contour_strategy=contour_strat)
