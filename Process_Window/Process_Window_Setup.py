@@ -14,8 +14,8 @@ except:
     dyn = dyndrite.launch()
 
 # TODO: INPUT VARIABLES for the Layout, and file
-
-
+machine_list = ['SLM','Aconity','EOS','Renishaw']
+machine = machine_list[1]
 square_file_name = os.path.join(os.getcwd(), 'Process_Window', 'cubecesar.stl')
 vector_file_name = os.path.join(os.getcwd(), 'Process_Window', 'Diamond_UVW_4mmUnitCell_1mmThickness.stl')  # Path to the STL file for the vector part
 line_file_name = os.path.join(os.getcwd(), 'Process_Window', 'Vector Lines.stl')  # Path to the STL file for the line part
@@ -33,9 +33,14 @@ toolpather = vp.toolpath_manager
 
 ssb = dyn.sampling_strategy_builder
 
-# Configure SLM 280 Envelope
-dyn.target_machine = dyn.Slm280()
-dyn.printer.plate_thickness = 20.00
+if machine == 'SLM':
+    # Configure SLM 280 Envelope
+    dyn.target_machine = dyn.Slm280()
+    dyn.printer.plate_thickness = 20.00
+elif machine == 'Aconity':
+    # Configure Aconity MIDI Envelope
+    dyn.target_machine = dyn.AconityMidi()
+    dyn.printer.plate_thickness = 20.00
 
 brep_parameters = None
 
@@ -48,7 +53,7 @@ def manipulate_part(part, x_move=0.0, y_move=0.0, z_move=0.0, scale=1.0):
         multiplier=dyn.Vector3(scale,scale,scale),
         pivot=None)
     
-def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
+def set_up_plate(x_center,y_center,show_square=True,show_experiment=True):
     if show_square:
         outline_slice = dyn.ops.load_part(path=square_file_name,
             auto_center=True,
@@ -59,7 +64,7 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
             mesh_healing_parameters=None)
         outline_slice_rgn0=outline_slice.region[0]
         manipulate_part(outline_slice,x_move=x_center,y_move=y_center,z_move=0.0)
-    if show_experiemnt:
+    if show_experiment:
         vector_slice = dyn.ops.load_part(path=vector_file_name,
             auto_center=True,
             transform=None,
@@ -88,23 +93,30 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
             z_spacing=20,
             pivot=None,
             center_to_center=True)
-    if show_experiemnt:
+    if show_experiment:
         return [vector_slice] + all_lines.parts()
     elif show_square:
         return [outline_slice]
 
 
 plate_list = []
-plate_positions = [(-106.4,25), #  Plate 1
-                   (-25.8,25), #   Plate 2
-                   (25.4,27.5), #  Plate 3
-                   (105.4,27.5)] # Plate 4
-plate_parameters = [{'power': 100, 'speed': 800},  #Plate 1
-                    {'power': 100, 'speed': 1000}, #Plate 2
-                    {'power': 200, 'speed': 1250}, #Plate 3
-                    {'power': 300, 'speed': 1000}] #Plate 4
+# SLM Configuration
+# plate_positions = [(-106.4,25), #  Plate 1
+#                    (-25.8,25), #   Plate 2
+#                    (25.4,27.5), #  Plate 3
+#                    (105.4,27.5)] # Plate 4
+# plate_parameters = [{'power': 100, 'speed': 800},  #Plate 1
+#                     {'power': 100, 'speed': 1000}, #Plate 2
+#                     {'power': 200, 'speed': 1250}, #Plate 3
+#                     {'power': 300, 'speed': 1000}] #Plate 4
+
+# AconityMIDI Configuration
+plate_positions = [(-50.4,25), #  Plate 1
+                   (50,25), #   Plate 2
+                   (-25.4,-27.5), #  Plate 3
+                   (50,-27.5)] # Plate 4
 for x_pos, y_pos in plate_positions:
-    plate_list.append(set_up_plate(x_pos,y_pos,show_square=False,show_experiemnt=True))
+    plate_list.append(set_up_plate(x_pos,y_pos,show_square=False,show_experiment=True))
 
 print(f"Number of plates that are being sliced: {len(plate_list)}")
 
