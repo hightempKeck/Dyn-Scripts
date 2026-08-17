@@ -58,7 +58,7 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
             brep_sampling_parameters=brep_parameters,
             mesh_healing_parameters=None)
         outline_slice_rgn0=outline_slice.region[0]
-        manipulate_part(outline_slice,x_move=x_center,y_move=y_center,z_move=-24.0)
+        manipulate_part(outline_slice,x_move=x_center,y_move=y_center,z_move=0.0)
     if show_experiemnt:
         vector_slice = dyn.ops.load_part(path=vector_file_name,
             auto_center=True,
@@ -77,7 +77,7 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
             mesh_healing_parameters=None)
         line_slices_rgn0=line_slices.region[0]
 
-        manipulate_part(vector_slice, x_move=2.0+x_center,y_move=y_center, scale=2.0)
+        manipulate_part(vector_slice, x_move=2.0+x_center,y_move=y_center, z_move=3.0, scale=2.0)
         manipulate_part(line_slices, x_move=-11.0+x_center,y_move=-3.0+y_center,scale=2.0)
         all_lines = dyn.ops.pattern(part=line_slices,
             x=5,
@@ -88,8 +88,10 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiemnt=True):
             z_spacing=20,
             pivot=None,
             center_to_center=True)
-
-    return [vector_slice, all_lines]
+    if show_experiemnt:
+        return [vector_slice] + all_lines.parts()
+    elif show_square:
+        return [outline_slice]
 
 
 plate_list = []
@@ -102,8 +104,65 @@ plate_parameters = [{'power': 100, 'speed': 800},  #Plate 1
                     {'power': 200, 'speed': 1250}, #Plate 3
                     {'power': 300, 'speed': 1000}] #Plate 4
 for x_pos, y_pos in plate_positions:
-    plate_list.append(set_up_plate(x_pos,y_pos))
+    plate_list.append(set_up_plate(x_pos,y_pos,show_square=False,show_experiemnt=True))
 
 print(f"Number of plates that are being sliced: {len(plate_list)}")
 
+# Create the zones
+zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
+zoner.init_zone(zone_type=zoner.PartZoneType.DOWNSKIN,width=0.03, color=(0, 255, 0))
+zoner.init_zone(zone_type=zoner.PartZoneType.UPSKIN,width=0.03, color=(0, 0, 255))
+
+# Create the segment shared by every plate
+core_seg0 = zoner.create_segment(zone_type=zoner.PartZoneType.CORE, color=(231,0,0))
+
+segmentation = zoner.create_volumetric_segmentation_strategy(core_seg0, )
+
+# Shared contour strategy/default hatching params for every plate
+contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
+default_hatching = dyn.HatchingParameters(hatch_spacing=0.12,scan_angle=math.radians(135),fill_to_perimeter=2)
+
+# Build a schema per plate so each one gets its own power/speed build style,
+# then apply it only to that plate's parts. Everything else stays default.
+for plate_parts, params in zip(plate_list, plate_parameters):
+    plate_melt = toolpather.create_build_style(
+        slm_params=dyn.SlmToolParameters(
+            laser_index=1,
+            laser_focus_mm=0,
+            laser_power_w=params['power'],
+            laser_speed_mm_per_s=params['speed'],
+            custom_build_style_id=None
+        ))
+
+    hatch_config = {core_seg0: plate_melt}
+    perimeter_config = {core_seg0: (plate_melt, [plate_melt, plate_melt])}
+
+    schema = toolpather.create_toolpath_schema(segmentation_strategy=segmentation,contour_strategy=contour_strat)
+    schema.set_hatch_config(config=hatch_config)
+    schema.set_all_perimeter_configs(config=perimeter_config)
+    schema.fill_default_hatch_generation(params=default_hatching)
+
+    for part in plate_parts:
+        vp.apply_schema(geometry=part,schema=schema,region_segment_mapping=None)
+
+vp.finalize()
+
+# Slice output
+output_dir = os.path.join(os.getcwd(), 'Process_Window')
+output_path = os.path.join(output_dir, 'ProcessWindow_Lattice.slm')
+
+vp.slicing_thickness = Layer_thickness
+vp.slicing_resolution = dyn.Vector2(0.03,0.03)
+
+def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
+    print("Slicing Layer: " + str(layer_idx))
+
+    # Contours/borders only - no hatch fill written
+    perimeters = ctx.get_perimeters()
+    writer.write_perimeters(perimeters=perimeters)
+
+vp.slice_all(
+    writers=dyn.SlmWriter(out_file=output_path),
+    on_slice=cb
+)
 
