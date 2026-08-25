@@ -14,7 +14,7 @@ except:
     dyn = dyndrite.launch()
 
 # TODO: INPUT VARIABLES for the Layout, and file
-machine_list = ['SLM','Aconity','EOS','Renishaw']
+machine_list = ['SLM','MIDI','EOS','Renishaw']
 machine = machine_list[1]
 square_file_name = os.path.join(os.getcwd(), 'Process_Window', 'cubecesar.stl')
 vector_file_name = os.path.join(os.getcwd(), 'Process_Window', 'Diamond_UVW_4mmUnitCell_1mmThickness.stl')  # Path to the STL file for the vector part
@@ -37,7 +37,7 @@ if machine == 'SLM':
     # Configure SLM 280 Envelope
     dyn.target_machine = dyn.Slm280()
     dyn.printer.plate_thickness = 20.00
-elif machine == 'Aconity':
+elif machine == 'MIDI':
     # Configure Aconity MIDI Envelope
     dyn.target_machine = dyn.AconityMidi()
     dyn.printer.plate_thickness = 20.00
@@ -111,12 +111,17 @@ plate_list = []
 #                     {'power': 300, 'speed': 1000}] #Plate 4
 
 # AconityMIDI Configuration
-plate_positions = [(-50.4,25), #  Plate 1
-                   (50,25), #   Plate 2
-                   (-25.4,-27.5), #  Plate 3
-                   (50,-27.5)] # Plate 4
+plate_positions = [(25.4,27.5), #  Plate 1
+                   (24.5,-28.6), #   Plate 2
+                   (-26.4,-27.1), #  Plate 3
+                   (-25.8,25)] # Plate 4
+
+plate_parameters = [{'power': 100, 'speed': 800},  #Plate 1
+                    {'power': 100, 'speed': 1000}, #Plate 2
+                    {'power': 200, 'speed': 1250}, #Plate 3
+                    {'power': 300, 'speed': 1000}] #Plate 4
 for x_pos, y_pos in plate_positions:
-    plate_list.append(set_up_plate(x_pos,y_pos,show_square=False,show_experiment=True))
+    plate_list.append(set_up_plate(x_pos,y_pos,show_square=True,show_experiment=False))
 
 print(f"Number of plates that are being sliced: {len(plate_list)}")
 
@@ -137,14 +142,21 @@ default_hatching = dyn.HatchingParameters(hatch_spacing=0.12,scan_angle=math.rad
 # Build a schema per plate so each one gets its own power/speed build style,
 # then apply it only to that plate's parts. Everything else stays default.
 for plate_parts, params in zip(plate_list, plate_parameters):
-    plate_melt = toolpather.create_build_style(
-        slm_params=dyn.SlmToolParameters(
-            laser_index=1,
-            laser_focus_mm=0,
-            laser_power_w=params['power'],
-            laser_speed_mm_per_s=params['speed'],
-            custom_build_style_id=None
-        ))
+    if machine == 'SLM':
+        plate_melt = toolpather.create_build_style(
+            slm_params=dyn.SlmToolParameters(
+                laser_index=1,
+                laser_focus_mm=0,
+                laser_power_w=params['power'],
+                laser_speed_mm_per_s=params['speed'],
+                custom_build_style_id=None
+            ))
+    elif machine == 'MIDI':
+        plate_melt = toolpather.create_build_style(
+            cli_plus_params=dyn.CliPlusToolParameters.build({
+                "laser_power": ("watt", "double", params['power']),
+                "mark_speed": ("mm/s", "double", params['speed']),
+            }))
 
     hatch_config = {core_seg0: plate_melt}
     perimeter_config = {core_seg0: (plate_melt, [plate_melt, plate_melt])}
@@ -161,7 +173,10 @@ vp.finalize()
 
 # Slice output
 output_dir = os.path.join(os.getcwd(), 'Process_Window')
-output_path = os.path.join(output_dir, 'ProcessWindow_Lattice.slm')
+if machine == 'SLM':
+    output_path = os.path.join(output_dir, 'ProcessWindow_Lattice.slm')
+elif machine == 'MIDI':
+    output_path = os.path.join(output_dir, 'ProcessWindow_Squares.ilt')
 
 vp.slicing_thickness = Layer_thickness
 vp.slicing_resolution = dyn.Vector2(0.03,0.03)
@@ -173,8 +188,18 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
     perimeters = ctx.get_perimeters()
     writer.write_perimeters(perimeters=perimeters)
 
+
+if machine == 'SLM':
+    writer = dyn.SlmWriter(out_file=output_path)
+elif machine == 'MIDI':
+    writer = dyn.IltWriter(
+        out_file=output_path,
+        single_file=False,
+        write_inline_parameters=True,
+    )
+
 vp.slice_all(
-    writers=dyn.SlmWriter(out_file=output_path),
+    writers=writer,
     on_slice=cb
 )
 

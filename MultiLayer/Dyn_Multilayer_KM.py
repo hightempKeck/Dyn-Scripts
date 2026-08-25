@@ -17,9 +17,9 @@ except:
 
 # csv_file_path = r'MultiLayer\PreRandomized_MultiLayer.csv'
 # csv_file_path = r'MultiLayer\Randomized1_MultiLayer.csv'
-csv_file_path = r'MultiLayer\MultiLayer_Part2.csv'
+csv_file_path = r'MultiLayer\Z Stage Validation Final.csv'
 square_file_name = os.path.join(os.getcwd(), 'MultiLayer', '10mm_cube.step')  # Path to the STEP file for the square part
-array_shape = (5, 11)  # shape for the array, adjust as needed ( rows, columns) 
+array_shape = (5, 10)  # shape for the array, adjust as needed ( rows, columns) 
 seperation = 8.0  # separation distance between parts in mm
 brep_parameters = None
 Layer_thickness = 0.04
@@ -51,83 +51,80 @@ dyn.target_machine = dyn.Slm280()
 dyn.printer.plate_thickness = 20.00
 dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 
-# Read the CSV
-df = pd.read_csv(csv_file_path)
-Layer_Height = df['Number of Layers'].values
-len_data = len(Layer_Height)
-# Not needed at this point, may be needed later for uneven array 
-leftover_points = len_data - (array_shape[0] * array_shape[1])
+def set_up_plate(x_center, y_center, csv_file_path=csv_file_path):
+    # Read the CSV
+    df = pd.read_csv(csv_file_path)
+    Layer_Height = df['Number of Layers'].values
 
-# Calculate width and height and adjust for origin placement 
-x_val = array_shape[1] * seperation - (0.5 * seperation)
-y_val = array_shape[0] * seperation - (0.5 * seperation)
-index = 0
+    # Calculate width and height and adjust for origin placement
+    x_val = array_shape[1] * seperation - (0.5 * seperation)
+    y_val = array_shape[0] * seperation - (0.5 * seperation)
+
+    base_build = dyn.ops.load_part(path=square_file_name,
+         auto_center=True,
+         transform=None,
+         translate_only=None,
+         open_geometry=False,
+         brep_sampling_parameters=brep_parameters,
+         mesh_healing_parameters=None)
+
+    dyn.ops.translate(part=base_build,
+         offset=dyn.Vector3(x_center, y_center, 0.0),
+         pivot=None)
+    dyn.ops.scale(part=base_build,
+         multiplier=dyn.Vector3(9.2, 4.4, 0.5),
+         pivot=None)
+
+    # Create array of parts from the CSV data
+    prt_array = [base_build]
+    index = 0
+    for i in range(array_shape[0]):
+        for j in range(array_shape[1]):
+            current_layer_amount = Layer_Height[index]
+
+            # Calculate the position for the current part
+            x_pos = j * seperation - (0.5 * x_val) + x_center
+            y_pos = i * seperation - (0.5 * y_val) + y_center
+
+            prt0 = dyn.ops.load_part(path=square_file_name,
+                auto_center=True,
+                transform=None,
+                translate_only=None,
+                open_geometry=False,
+                brep_sampling_parameters=brep_parameters,
+                mesh_healing_parameters=None)
+            # +4 for centering the part in the zone, adjust as needed
+            dyn.ops.translate(part=prt0,
+                offset=dyn.Vector3(x_pos+2, y_pos+2, 5.0),
+                pivot=None)
+            # Make the part the size and 1mm tall
+            dyn.ops.scale(part=prt0,
+                multiplier=dyn.Vector3(0.4, 0.4, 0.1),
+                pivot=None)
+
+            total_height = current_layer_amount * (Layer_thickness)  # Add 0.01mm to account for the base plate thickness
+            print(f"Placing part at row {i+1}, column {j+1} with {current_layer_amount} layers and total height {total_height} mm")
+            scale_factor = total_height
+            dyn.ops.scale(part=prt0,
+                multiplier=dyn.Vector3(1, 1, scale_factor),
+                pivot=None)
+
+            prt_array.append(prt0)
+            index += 1
+
+    return prt_array
 
 
-base_build = dyn.ops.load_part(path=square_file_name,
-     auto_center=True,
-     transform=None,
-     translate_only=None,
-     open_geometry=False,
-     brep_sampling_parameters=brep_parameters,
-     mesh_healing_parameters=None)
-base_build_rgn=base_build.region[0]
+# Plate centers to build - add more (x_center, y_center, csv_file_path) tuples to build multiple plates
+plate_layouts = [
+    (50.0, -20.0, csv_file_path), (-50.0, 20.0, csv_file_path),
+]
 
+all_parts = []
+for x_center, y_center, plate_csv in plate_layouts:
+    all_parts.extend(set_up_plate(x_center, y_center, plate_csv))
 
-dyn.ops.scale(part=base_build,
-     multiplier=dyn.Vector3(9.2, 4.4, 0.5),
-     pivot=None)
-
-# Create array of points from the CSV data
-prt_array = []
-prt_rgn_array = []
-for i in range(array_shape[0]):
-    for j in range(array_shape[1]):
-        current_layer_amount = Layer_Height[index]
-        
-        # Calculate the position for the current part
-        x_pos = j * seperation - (0.5 * x_val)
-        y_pos = i * seperation - (0.5 * y_val)
-
-        prt0 = dyn.ops.load_part(path=square_file_name,
-            auto_center=True,
-            transform=None,
-            translate_only=None,
-            open_geometry=False,
-            brep_sampling_parameters=brep_parameters,
-            mesh_healing_parameters=None)
-        prt0_rgn0=prt0.region[0]     
-        # +4 for centering the part in the zone, adjust as needed
-        dyn.ops.translate(part=prt0,
-            offset=dyn.Vector3(x_pos+2, y_pos+2, 5.0),
-            pivot=None)
-        # Make the part the size and 1mm tall
-        dyn.ops.scale(part=prt0,
-            multiplier=dyn.Vector3(0.4, 0.4, 0.1),
-            pivot=None)
-        
-        # this part here should be the height but i cant get it to work and idk why
-        # Calculate the scale factor based on current_layer_amount and the original height of the part (10mm)
-        # if current_layer_amount >=100 or current_layer_amount % 2 ==1:
-        total_height = current_layer_amount * (Layer_thickness )  # Add 0.01mm to account for the base plate thickness
-        #     if current_layer_amount == 100:
-        #         total_height -=0.05
-        # else:
-        #     if current_layer_amount == 30:
-        #         total_height = 11.55 - 10.0
-        #     elif current_layer_amount == 60:
-        #         total_height = 13.0 - 10.0
-            
-        
-        print(f"Placing part at row {i+1}, column {j+1} with {current_layer_amount} layers and total height {total_height} mm")
-        scale_factor = total_height  
-        dyn.ops.scale(part=prt0,
-            multiplier=dyn.Vector3(1, 1, scale_factor),
-            pivot=None)
-            
-        prt_array.append(prt0)
-        prt_rgn_array.append(prt0_rgn0)
-        index += 1
+print(f"Number of parts placed across {len(plate_layouts)} plate(s): {len(all_parts)}")
 
 ##----GOOD UP TO HERE
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
@@ -186,8 +183,7 @@ schema.set_all_perimeter_configs(config=perimeter_config)
 
 schema.fill_default_hatch_generation(params=default_hatching)
 
-prt_array.insert(0, base_build)
-for part in  prt_array:
+for part in all_parts:
     vp.apply_schema(geometry=part, schema=schema, region_segment_mapping=None)
 
 vp.finalize()
