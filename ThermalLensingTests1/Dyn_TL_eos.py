@@ -32,11 +32,10 @@ dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 # Configure EOS M 290 1kW Envelope
 dyn.target_machine = dyn.EosM290_1kw()
 dyn.printer.plate_thickness = 20.00
-dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
 
 brep_parameters = None
 
-my_ip="129.108.202.64"
+my_ip="10.6.21.40"  # available if streaming directly to the EOS M290 (host=my_ip)
 
 def part_halfwidth(part):
     return 0.5 * (part.world_limits.max.x - part.world_limits.min.x)
@@ -76,28 +75,48 @@ cylinder_right = dyn.ops.load_part(path=r"C:\Users\Tech Engineering\Documents\Hy
      mesh_healing_parameters=None)
 cylinder_right_rgn0=cylinder_right.region[0]
 
+dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
+
 dyn.ops.place(part=cube,location=dyn.Vector3(0,0,0))
-dyn.ops.align_to_plate(part=dyn.part[0], offset=0.0)
+dyn.ops.align_to_plate(part=dyn.part[0],
+     offset=0.0)
 
 # cube limits
-cube_min_x = cube.world_limits.min.x
-cube_max_x = cube.world_limits.max.x
+# cube_min_x = cube.world_limits.min.x
+# cube_max_x = cube.world_limits.max.x 
 
-# L/R half widths
-left_halfw = part_halfwidth(cylinder_left)
-right_halfw = part_halfwidth(cylinder_right)
+# # L/R half widths
+# left_halfw = part_halfwidth(cylinder_left)
+# right_halfw = part_halfwidth(cylinder_right)
 
 # Distance to place L/R cubes
-left_target_max = cube_min_x - 5
-right_target_min = cube_max_x + 5
+# left_target_max = cube_min_x - 5
+# right_target_min = cube_max_x + 5
 
-left_target_center_x = left_target_max - left_halfw
-right_target_center_x = right_target_min + right_halfw
+# left_target_max = cube_min_x - 25
+# right_target_min = cube_max_x + 25
 
-dyn.ops.place(part=cylinder_left,location=dyn.Vector3(left_target_center_x,0,0))
-dyn.ops.align_to_plate(part=dyn.part[1], offset=0.0)
-dyn.ops.place(part=cylinder_right,location=dyn.Vector3(right_target_center_x,0,0))
-dyn.ops.align_to_plate(part=dyn.part[2], offset=0.0)
+# left_target_center_x = left_target_max - left_halfw
+# right_target_center_x = right_target_min + right_halfw
+
+dyn.ops.place(part=cylinder_left,location=dyn.Vector3(45,0,0))
+dyn.ops.place(part=cylinder_right,location=dyn.Vector3(-45,0,0))
+
+prt0_rgn0_lbl0 = dyn.ops.create_text_label(region=dyn.part[0].region[0],
+     position=dyn.Vector3(46,46,10),
+     rotation=0.0,
+     text="O",
+     font=dyn.LabelFont.ROBOTO,
+     font_size=4.00,
+     depth=0.50,
+     overlap=0.30,
+     units=dyn.LabelUnits.MM,
+     is_emboss=True,
+     placement_radius=0.1,
+     parts=[],
+     horizontal_alignment=dyn.LabelHorizontalAlignment.ALIGN_LEFT,
+     vertical_alignment=dyn.LabelVerticalAlignment.ALIGN_MIDDLE)
+
 
 # Create the zones
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
@@ -112,31 +131,6 @@ segmentation = zoner.create_volumetric_segmentation_strategy(core_seg0, )
 # Create two contours
 contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
 
-## Aconity CLI+ build style (commented out — EOS M290 uses EosToolParameters below)
-# normal_melt = toolpather.create_build_style(
-#     cli_plus_params=dyn.CliPlusToolParameters.build({
-#         "laser_power": ("watt", "double", 285),
-#         "mark_speed": ("mm/s", "double", 1000),
-#     }))
-
-# bst2 = toolpather.create_build_style(
-#     eos_openjz_params=dyn.EosOpenJzToolParameters(
-#         exposure_set="",
-#         laser_index=0
-#     ))
-# bst2 = toolpather.create_build_style(
-#     eos_params=dyn.EosToolParameters(
-#         exposure_set="",
-#         laser_index=0,
-#         laser_power_w=0,
-#         laser_speed_mm_per_s=0,
-#         laser_focus=0,
-#         exposed_depth_mm=None,
-#         power_delay_us=0,
-#         use_skywriting=False,
-#         pulse_wave=None,
-#         beam_profile_id=None
-#     ))
 normal_melt = toolpather.create_build_style(
     eos_params=dyn.EosToolParameters(
         exposure_set="",
@@ -150,8 +144,6 @@ normal_melt = toolpather.create_build_style(
         pulse_wave=None,
         beam_profile_id=None
     ))
-
-
 
 # Set up config for Schema
 hatch_config = {core_seg0: normal_melt}
@@ -234,7 +226,6 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
         fill_to_perimeter=2
     )
 
-
     # Set up the hatches
     ctx.hatch_fragments(fragments=cylinder_left_frags,hatching_params=cyl_hatching)
     ctx.hatch_fragments(fragments=cube_frags, hatching_params=cube_hatching)
@@ -244,19 +235,28 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
     writer.write_fragments(fragments=cube_frags)
     writer.write_fragments(fragments=cylinder_right_frags)
 
-
     writer.write_perimeters(perimeters=perimeters) ###maybe recomment out?
-
-directory = "C:/Users/Public/Documents/Dyndrite"
-filepath = os.path.join(directory, "LensExample.sli")
+    
+print("Initializing EOS API!!!")
 
 # MATERIAL FILE: define the path to your EOS material XML here, then pass it below
 material_file = r"C:\Users\Tech Engineering\Desktop\Materialise\BuildProcessors\EOS\3.0\Configuration\EOSPAR\IN718_040_PerformanceM291_102.eospar"
+directory = "C:/Users/Public/Documents/Dyndrite"
+filepath = os.path.join(directory, "Dyn_TL_EOS.sli")
 
-# my_ip = "129.108.202.64"  — available if streaming directly to the EOS M290 (host=my_ip)
+
+ip_address = "169.254.45.145"  # available if streaming directly to the EOS M290 (host=my_ip)
+
+eos_gen = dyn.target_machine.start_task_generation(
+        dyn.OnlineTaskGeneration(machine_ip=ip_address, should_download=True))
+eos_gen.load_material_set(material_file)
+
+vp.slicing_thickness = eos_gen.get_slicing_thickness()
+vp.finalize()
+
 vp.slice_all(
     writers=dyn.EosToolpathWriter(
-        out_file=filepath,
+        out_dir=filepath,
         material_file=material_file,  # uncomment once material_file path is set above
     ),
     on_slice=cb
