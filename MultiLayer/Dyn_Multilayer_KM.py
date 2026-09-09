@@ -17,13 +17,15 @@ except:
 
 # csv_file_path = r'MultiLayer\PreRandomized_MultiLayer.csv'
 # csv_file_path = r'MultiLayer\Randomized1_MultiLayer.csv'
-csv_file_path = r'MultiLayer\Z Stage Validation Final.csv'
+csv_file_path = r'MultiLayer\Randomized_ZStage_Validation_Final.csv'
 square_file_name = os.path.join(os.getcwd(), 'MultiLayer', '10mm_cube.step')  # Path to the STEP file for the square part
 array_shape = (5, 10)  # shape for the array, adjust as needed ( rows, columns) 
-seperation = 8.0  # separation distance between parts in mm
+seperation = 6.0  # separation distance between parts in mm
 brep_parameters = None
-Layer_thickness = 0.04
+Layer_thickness = 0.03
 
+machine_list = ['SLM','MIDI','EOS','Renishaw']
+machine = ''  # Select the machine type from the list
 
 
 # Prepare both raster and vector process pipelines within the Turbo User Interface
@@ -36,20 +38,22 @@ toolpather = vp.toolpath_manager
 
 ssb = dyn.sampling_strategy_builder
 
-# Configure Dyndrite Vector Printer Envelope
-dyn.target_machine = dyn.DyndriteVectorMachine()
-
-dyn.printer.plate_type = dyn.PrinterPlateType.RECTANGULAR
-dyn.printer.plate = (200.00, 200.00)
-dyn.printer.height = 200.00
-dyn.printer.plate_thickness = 20.00
-dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
-
-##------ASK KEYLA AB MACHINE------
-# Configure SLM 280 Envelope
-dyn.target_machine = dyn.Slm280()
-dyn.printer.plate_thickness = 20.00
-dyn.printer.origin = dyn.Vector3(0.00, 0.00, 0.00)
+if machine == 'SLM':
+    # Configure SLM 280 Envelope
+    dyn.target_machine = dyn.Slm280()
+    dyn.printer.plate_thickness = 20.00
+elif machine == 'MIDI':
+    # Configure Aconity MIDI Envelope
+    dyn.target_machine = dyn.AconityMidi()
+    dyn.printer.plate_thickness = 20.
+elif machine == 'EOS':
+    # Configure EOS M290 Envelope
+    dyn.target_machine = dyn.EosM290()
+    dyn.printer.plate_thickness = 20.00
+elif machine == 'Renishaw':
+    # Configure Renishaw AM500Q Envelope
+    dyn.target_machine = dyn.Renam500Q()
+    dyn.printer.plate_thickness = 20.00
 
 def set_up_plate(x_center, y_center, csv_file_path=csv_file_path):
     # Read the CSV
@@ -72,7 +76,7 @@ def set_up_plate(x_center, y_center, csv_file_path=csv_file_path):
          offset=dyn.Vector3(x_center, y_center, 0.0),
          pivot=None)
     dyn.ops.scale(part=base_build,
-         multiplier=dyn.Vector3(9.2, 4.4, 0.5),
+         multiplier=dyn.Vector3(6.4, 4.0, 0.5),
          pivot=None)
 
     # Create array of parts from the CSV data
@@ -117,7 +121,7 @@ def set_up_plate(x_center, y_center, csv_file_path=csv_file_path):
 
 # Plate centers to build - add more (x_center, y_center, csv_file_path) tuples to build multiple plates
 plate_layouts = [
-    (50.0, -20.0, csv_file_path), (-50.0, 20.0, csv_file_path),
+    (-0.0, 0.0, csv_file_path),#(90.0, 0.0, csv_file_path), (-90.0, 0.0, csv_file_path),
 ]
 
 all_parts = []
@@ -149,14 +153,41 @@ segmentation = zoner.create_volumetric_segmentation_strategy(
 # Create two contours
 contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
 
-bst0 = toolpather.create_build_style(
-    slm_params=dyn.SlmToolParameters(
-        laser_index=1,
-        laser_focus_mm=0,
-        laser_power_w=370,
-        laser_speed_mm_per_s=1420,
-        custom_build_style_id=None
-    ))
+if machine == 'SLM':
+    bst0 = toolpather.create_build_style(
+        slm_params=dyn.SlmToolParameters(
+            laser_index=1,
+            laser_focus_mm=0,
+            laser_power_w=370,
+            laser_speed_mm_per_s=1420,
+            custom_build_style_id=None
+        ))
+elif machine == 'MIDI':
+    bst0 = toolpather.create_build_style(
+        cli_plus_params=dyn.CliPlusToolParameters.build({
+            "laser_power": ("watt", "double", 285),
+            "mark_speed": ("mm/s", "double", 1000),
+        }))
+elif machine == 'EOS':
+    bst0 = toolpather.create_build_style(
+        eos_params=dyn.EosToolParameters(
+            laser_index=1,
+            laser_focus_mm=0,
+            laser_power_w=370,
+            laser_speed_mm_per_s=1420,
+            custom_build_style_id=None
+        ))
+elif machine == 'Renishaw':
+    bst0 = toolpather.create_build_style(
+        renishaw_params=dyn.RenishawToolParameters(
+            laser_index=1,
+            jump_delay_us=0,
+            laser_focus_mm=0,
+            laser_power_w=285,
+            laser_speed_mm_per_s=1000,
+            point_exposure_time_us=0,
+            point_distance_um=0,
+        ))
 
 hatch_config = {
     core_seg0:     bst0,
@@ -196,7 +227,7 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
     # Print layer height and thickness
     collection = ctx.get_fragments()
     all_segments = ctx.zone_manager.get_all_segments()
-    perimeters = ctx.get_perimeters()
+    # perimeters = ctx.get_perimeters()
 
     downskin_seg = []
     upskin_seg = []
@@ -244,12 +275,34 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
         new_seg = collection.select_by_segment(segments=[seg])
         writer.write_fragments(fragments=new_seg)
     
-    writer.write_perimeters(ctx.perimeters)
 
-# Slice output 
-output_path = os.path.join(os.getcwd(), 'MultiLayer', 'Multilayer_1_Part2.slm')
 
+# Slice output
+output_dir = os.path.join(os.getcwd(), 'MultiLayer')
+output_file_name = "ZStage_Validation_Final_Skinny_NoContour"
+if machine == 'SLM':
+    output_path = os.path.join(output_dir, f'{output_file_name}.slm')
+elif machine == 'MIDI':
+    output_path = os.path.join(output_dir, f'{output_file_name}.ilt')
+elif machine == 'Renishaw':
+    output_path = os.path.join(output_dir, f'{output_file_name}.mtt')
+
+if machine == 'SLM':
+    writer = dyn.SlmWriter(out_file=output_path)
+elif machine == 'MIDI':
+    writer = dyn.IltWriter(
+        out_file=output_path,
+        single_file=False,
+        write_inline_parameters=True,
+    )
+elif machine == 'Renishaw':
+    writer = dyn.MttWriter(
+        out_file=output_path,
+        single_file=False,
+        write_inline_parameters=True,
+    )
 vp.slice_all(
-    writers=dyn.SlmWriter(
-        output_path,),  on_slice=cb) #vp.slice_all(writers=dyn.SlmWriter(out_file, configuration=dyn.SlmConfiguration(num_lasers=num_lasers)), on_slice=cb)
+    writers=writer,
+    on_slice=cb
+)
 

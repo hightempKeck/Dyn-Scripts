@@ -132,9 +132,6 @@ gasflow = dyn.Vector2(1, 0)
 hatch_unit_vec = dyn.Vector2(0, 1)
 cylinder_rotate_per_layer = math.radians(67)
 
-vp.slicing_thickness = 1
-vp.slicing_resolution = dyn.Vector2(0.03, 0.03)
-
 # Constrain angle to be not with gas flow
 def constraint_to_allowed_windows(angle_rads):
     angle_deg = math.degrees(angle_rads) % 360
@@ -148,6 +145,7 @@ def make_all_lasers_cb(cubes, cyl_lefts, cyl_rights):
         print("Slicing Layer: " + str(layer_idx))
 
         fragments = ctx.get_fragments()
+        perimeters = ctx.get_perimeters()
 
         cyl_angle_raw = layer_idx * cylinder_rotate_per_layer
         cyl_scan_angle, cyl_fill_vec = ctx.gas_flow_compensation(
@@ -198,6 +196,8 @@ def make_all_lasers_cb(cubes, cyl_lefts, cyl_rights):
             writer.write_fragments(fragments=cube_frags)
             writer.write_fragments(fragments=cyl_right_frags)
 
+        writer.write_perimeters(perimeters=perimeters)
+
     return cb
 
 
@@ -233,8 +233,12 @@ for i, (cube_i, cyl_left_i, cyl_right_i) in enumerate(zip(all_cubes, all_cyl_lef
 
 vp.finalize()
 
+vp.slicing_thickness = 0.03
+vp.slicing_resolution = dyn.Vector2(0.03, 0.03)
+
 filepath = os.path.join(directory, "dyn_LBV_REN_all.mtt")
 print(f"Slicing all lasers -> {filepath}")
+
 vp.slice_all(
     writers=dyn.MttWriter(filepath, trans_data),
     on_slice=make_all_lasers_cb(all_cubes, all_cyl_lefts, all_cyl_rights)

@@ -1,0 +1,8 @@
+MultiLayer/Z Stage Validation Final.xlsx
+
+
+# ignore all files in the build/ directory
+build/
+MultiLayer/Build/
+Process_Window/Build/
+

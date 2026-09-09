@@ -48,7 +48,7 @@ cube = dyn.ops.load_part(path=r"C:\Users\alwoocay\Documents\Dyndrite\Thermal_Len
 cube_rgn0=cube.region[0]
 
 dyn.ops.size(part=cube,
-     scale=dyn.Vector3(0.424, 0.424, 1),
+     scale=dyn.Vector3(0.424, 0.424, 10),
      pivot=None)
 
 brep_parameters = None
@@ -62,6 +62,10 @@ cylinder_left = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Len
      mesh_healing_parameters=None)
 cylinder_left_rgn0=cylinder_left.region[0]
 
+dyn.ops.size(part=cylinder_left,
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
+
 brep_parameters = None
 
 cylinder_right = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Lensing_Cyl.stl",
@@ -72,6 +76,10 @@ cylinder_right = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Le
      brep_sampling_parameters=brep_parameters,
      mesh_healing_parameters=None)
 cylinder_right_rgn0=cylinder_right.region[0]
+
+dyn.ops.size(part=cylinder_right,
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
 
 dyn.ops.place(part=cube,location=dyn.Vector3(0,0,0))
 dyn.ops.align_to_plate(part=dyn.part[0],
@@ -149,6 +157,9 @@ schema.set_all_perimeter_configs(config=perimeter_config)
 
 schema.fill_default_hatch_generation(params=default_hatching)
 
+vp.slicing_thickness=0.03
+vp.slicing_resolution=dyn.Vector2(0.03,0.03)
+
 for part in [cube, cylinder_left, cylinder_right]:
     # apply schema to each part
     vp.apply_schema(geometry=part,schema=schema,region_segment_mapping=None)
@@ -166,8 +177,7 @@ output_dir = r"C:\Users\Public\Documents\Dyndrite"
 
 output_path = os.path.join(output_dir, 'LensExample.slm')
 
-vp.slicing_thickness=1
-vp.slicing_resolution=dyn.Vector2(0.03,0.03)
+
 
 # Constain angle to be not with gas flow
 def constraint_to_allowed_windows(angle_rads):
@@ -244,7 +254,7 @@ def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
 
 directory = "C:/Users/Public/Documents/Dyndrite"
 
-filepath = os.path.join(directory, "dyn_out.ilt")
+filepath = os.path.join(directory, "ThermalLensingVal.ilt")
 
 # False: multiple CLI+ streams packaged into one ILT; True: single CLI+ in the ILT
 single_file = False

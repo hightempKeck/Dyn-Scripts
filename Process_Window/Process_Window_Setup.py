@@ -15,7 +15,7 @@ except:
 
 # TODO: INPUT VARIABLES for the Layout, and file
 machine_list = ['SLM','MIDI','EOS','Renishaw']
-machine = machine_list[1]
+machine = machine_list[0]
 square_file_name = os.path.join(os.getcwd(), 'Process_Window', 'cubecesar.stl')
 vector_file_name = os.path.join(os.getcwd(), 'Process_Window', 'Diamond_UVW_4mmUnitCell_1mmThickness.stl')  # Path to the STL file for the vector part
 line_file_name = os.path.join(os.getcwd(), 'Process_Window', 'Vector Lines.stl')  # Path to the STL file for the line part
@@ -101,6 +101,7 @@ def set_up_plate(x_center,y_center,show_square=True,show_experiment=True):
 
 plate_list = []
 # SLM Configuration
+# machine = machine_list[0]
 # plate_positions = [(-106.4,25), #  Plate 1
 #                    (-25.8,25), #   Plate 2
 #                    (25.4,27.5), #  Plate 3
@@ -110,16 +111,29 @@ plate_list = []
 #                     {'power': 200, 'speed': 1250}, #Plate 3
 #                     {'power': 300, 'speed': 1000}] #Plate 4
 
-# AconityMIDI Configuration
+# # AconityMIDI Configuration
+machine = machine_list[1]
 plate_positions = [(25.4,27.5), #  Plate 1
                    (24.5,-28.6), #   Plate 2
                    (-26.4,-27.1), #  Plate 3
                    (-25.8,25)] # Plate 4
 
-plate_parameters = [{'power': 100, 'speed': 800},  #Plate 1
-                    {'power': 100, 'speed': 1000}, #Plate 2
-                    {'power': 200, 'speed': 1250}, #Plate 3
-                    {'power': 300, 'speed': 1000}] #Plate 4
+plate_parameters = [{'power': 200, 'speed': 800},  #Plate 1
+                    {'power': 300, 'speed': 1250}, #Plate 2
+                    {'power': 100, 'speed': 1000}, #Plate 3
+                    {'power': 100, 'speed': 800}] #Plate 4
+
+# SLM Y Configuration
+# machine = machine_list[0]
+# plate_positions = [(25.4,27.5), #  Plate 1
+#                    (24.5,-28.6), #   Plate 2
+#                    (25.4,105), #  Plate 3
+#                    (24.5,-108.6)] # Plate 4
+
+# plate_parameters = [{'power': 300, 'speed': 800},  #Plate 1
+#                     {'power': 300, 'speed': 1250}, #Plate 2
+#                     {'power': 200, 'speed': 1000}, #Plate 3
+#                     {'power': 300, 'speed': 1250}] #Plate 4
 for x_pos, y_pos in plate_positions:
     plate_list.append(set_up_plate(x_pos,y_pos,show_square=True,show_experiment=False))
 
@@ -173,10 +187,12 @@ vp.finalize()
 
 # Slice output
 output_dir = os.path.join(os.getcwd(), 'Process_Window')
+# file_name = 'ProcessWindow_Lattice_MIDI'
+file_name = 'ProcessWindow_Squares_MIDI'
 if machine == 'SLM':
-    output_path = os.path.join(output_dir, 'ProcessWindow_Lattice.slm')
+    output_path = os.path.join(output_dir, f'{file_name}.slm')
 elif machine == 'MIDI':
-    output_path = os.path.join(output_dir, 'ProcessWindow_Squares.ilt')
+    output_path = os.path.join(output_dir, f'{file_name}.ilt')
 
 vp.slicing_thickness = Layer_thickness
 vp.slicing_resolution = dyn.Vector2(0.03,0.03)
