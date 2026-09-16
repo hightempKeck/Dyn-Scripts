@@ -112,31 +112,6 @@ segmentation = zoner.create_volumetric_segmentation_strategy(core_seg0, )
 # Create two contours
 contour_strat = toolpather.create_pixel_contour_strategy(offsets=[0.1, 0.2],)
 
-## Aconity CLI+ build style (commented out — EOS M290 uses EosToolParameters below)
-# normal_melt = toolpather.create_build_style(
-#     cli_plus_params=dyn.CliPlusToolParameters.build({
-#         "laser_power": ("watt", "double", 285),
-#         "mark_speed": ("mm/s", "double", 1000),
-#     }))
-
-# bst2 = toolpather.create_build_style(
-#     eos_openjz_params=dyn.EosOpenJzToolParameters(
-#         exposure_set="",
-#         laser_index=0
-#     ))
-# bst2 = toolpather.create_build_style(
-#     eos_params=dyn.EosToolParameters(
-#         exposure_set="",
-#         laser_index=0,
-#         laser_power_w=0,
-#         laser_speed_mm_per_s=0,
-#         laser_focus=0,
-#         exposed_depth_mm=None,
-#         power_delay_us=0,
-#         use_skywriting=False,
-#         pulse_wave=None,
-#         beam_profile_id=None
-#     ))
 normal_melt = toolpather.create_build_style(
     eos_params=dyn.EosToolParameters(
         exposure_set="",
@@ -150,8 +125,6 @@ normal_melt = toolpather.create_build_style(
         pulse_wave=None,
         beam_profile_id=None
     ))
-
-
 
 # Set up config for Schema
 hatch_config = {core_seg0: normal_melt}

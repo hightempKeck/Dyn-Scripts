@@ -50,7 +50,7 @@ cube_rgn0=cube.region[0]
 brep_parameters = None
 
 dyn.ops.size(part=cube,
-     scale=dyn.Vector3(0.424, 0.424, 1),
+     scale=dyn.Vector3(0.424, 0.424, 10),
      pivot=None)
 
 cylinder_left = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Lensing_Cyl.stl",
@@ -64,6 +64,11 @@ cylinder_left_rgn0=cylinder_left.region[0]
 
 brep_parameters = None
 
+dyn.ops.size(part=cylinder_left,
+     scale=dyn.Vector3(1.5, 1.5, 10),
+     pivot=None)
+
+
 cylinder_right = dyn.ops.load_part(path=r"C:\Users\alwoocay\Downloads\Thermal_Lensing_Cyl.stl",
      auto_center=True,
      transform=None,
@@ -76,6 +81,11 @@ cylinder_right_rgn0=cylinder_right.region[0]
 dyn.ops.place(part=cube,location=dyn.Vector3(0,0,0))
 dyn.ops.align_to_plate(part=dyn.part[0],
      offset=0.0)
+
+dyn.ops.size(part=cylinder_right,
+     scale=dyn.Vector3(1.5, 1.5, 10),
+     pivot=None)
+
 
 # cube limits
 cube_min_x = cube.world_limits.min.x
