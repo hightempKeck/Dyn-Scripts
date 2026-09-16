@@ -46,7 +46,7 @@ prt0_rgn0=prt0.region[0]
 
 
 dyn.ops.scale(part=dyn.part[0],
-     multiplier=dyn.Vector3(0.42, 0.424, 1.0),
+     multiplier=dyn.Vector3(0.42, 0.424, 10.0),
      pivot=None)
 
 
@@ -83,6 +83,14 @@ dyn.ops.place(part=dyn.part[2],
      location=dyn.Vector3(173.980759, 125.0, 0.0),
      pivot=None)
 
+dyn.ops.size(part=dyn.part[1],
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
+
+dyn.ops.size(part=dyn.part[2],
+         scale=dyn.Vector3(1.5, 1.5, 10),
+         pivot=None)
+
 
 # Create the zones
 zoner.init_zone(zone_type=zoner.PartZoneType.SDF,width=0.03, color=(255, 0, 0))
@@ -105,7 +113,6 @@ normal_melt = toolpather.create_build_style(
         laser_speed_mm_per_s=1000,
         laser_focus=0,
         exposed_depth_mm=None,
-        power_delay_us=0,
         use_skywriting=False,
         pulse_wave=None,
         beam_profile_id=None
@@ -125,54 +132,21 @@ schema.set_all_perimeter_configs(config=perimeter_config)
 
 schema.fill_default_hatch_generation(params=default_hatching)
 
-from pathlib import Path
-
 vp = dyn.vector_process
 
-output_dir = Path(r"C:/Users/Public/Documents/Dyndrite")
-output_file = output_dir / r"dyn_out.openjz"
-extract_path = Path(r"C:/Users/Public/Documents/Dyndrite/Extract")
-out_task_path = Path(r"C:/Users/Public/Documents/Dyndrite/Task")
-
-extract_path = extract_path / r"Extract"
-out_task_path = out_task_path / r"Task"
-
-# session settings
-download_machine_config = True
-generate_tasks = True
-upload_task = True
-material_set_path = Path(r"C:/Users/Tech Engineering/Desktop/Materialise/BuildProcessors/EOS/3.0/Configuration/EOSPAR/AlSi10Mg_060_CoreM291_100.eospar")
-
-machine_ip = r"172.27.172.1"
-machine_config_path = os.path.join(output_dir, "MachineConfig")
-
-task_gen_config = dyn.OnlineTaskGeneration(machine_ip=machine_ip, should_download=download_machine_config, machine_config_download_and_load_path=machine_config_path)
-
-eos_gen = dyn.target_machine.start_task_generation(task_gen_config)
-
-eos_gen.load_material_set(material_set_path)
-
-vp.slicing_thickness = eos_gen.get_slicing_thickness()
+vp.slicing_thickness = 0.3
 vp.slicing_resolution = dyn.Vector2(0.03,0.03)
 
 vp.finalize()
 
-open_job_settings = vp.get_or_create_open_job_settings()
+# Slice output 
+output_path = os.path.join(os.getcwd(), 'ThermalLensingTests1', 'ThermalLensing.eos')
 
-# overlap settings
-has_overlap_settings = False
+vp.slice_all(
+    writers=dyn.SlmWriter(
+        output_path,),  on_slice=cb) #vp.slice_all(writers=dyn.SlmWriter(out_file, configuration=dyn.SlmConfiguration(num_lasers=num_lasers)), on_slice=cb)
 
-if has_overlap_settings:
-   open_job_settings.set_overlap_settings(overlap_function, overlap, period, exposure_overlap)
 
-def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
-    writer.write_perimeters(ctx.perimeters)
-    writer.write_fragments(ctx.fragments)
 
-vp.slice_all(writers=dyn.OpenJobWriter(out_file=output_file), on_slice=cb)
-if generate_tasks:
-   eos_gen.load_open_job(True, output_file, extract_path)
-   eos_gen.generate_tasks(out_task_path, extract_path / r"parts", r"")
-   
-if upload_task:
-   eos_gen.upload_tasks(out_task_path)
+
+

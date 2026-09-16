@@ -187,87 +187,85 @@ def constraint_to_allowed_windows(angle_rads):
         angle_deg = (angle_deg + 90) % 360
     return math.radians(angle_deg)
     
-# def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
-#     print("Slicing Layer: " + str(layer_idx))
+def cb(ctx: dyn.LayerContext, writer: dyn.VectorWriter, layer_idx):
+    print("Slicing Layer: " + str(layer_idx))
 
-#     # obtain fragments and perimeters
-#     fragments = ctx.get_fragments()
-#     perimeters = ctx.get_perimeters()
+    # obtain fragments and perimeters
+    fragments = ctx.get_fragments()
+    perimeters = ctx.get_perimeters()
 
-#     # Get geometry ids for each part
-#     cube_geometry_id = ctx.get_geometry_id(obj=cube)
-#     cylinder_left_geometry_id = ctx.get_geometry_id(obj=cylinder_left)
-#     cylinder_right_geometry_id = ctx.get_geometry_id(obj=cylinder_right)
+    # Get geometry ids for each part
+    cube_geometry_id = ctx.get_geometry_id(obj=cube)
+    cylinder_left_geometry_id = ctx.get_geometry_id(obj=cylinder_left)
+    cylinder_right_geometry_id = ctx.get_geometry_id(obj=cylinder_right)
 
-#     # Select only the fragments within the each individual fun 
-#     cube_frags = fragments.select_by_geometry_id(geometry_ids={cube_geometry_id})
-#     cylinder_left_frags = fragments.select_by_geometry_id(geometry_ids={cylinder_left_geometry_id})
-#     cylinder_right_frags = fragments.select_by_geometry_id(geometry_ids={cylinder_right_geometry_id})
+    # Select only the fragments within the each individual fun 
+    cube_frags = fragments.select_by_geometry_id(geometry_ids={cube_geometry_id})
+    cylinder_left_frags = fragments.select_by_geometry_id(geometry_ids={cylinder_left_geometry_id})
+    cylinder_right_frags = fragments.select_by_geometry_id(geometry_ids={cylinder_right_geometry_id})
 
-#     # Set up the gas flow constraints
-#     cube_angle_raw = math.radians(315)
-#     cube_scan_angle, cube_fill_vec = ctx.gas_flow_compensation(hatch_angle=cube_angle_raw,gas_flow_vector=gasflow, unit_hatch_vector=hatch_unit_vec,angle_limit=math.pi)
-#     cube_hatching = dyn.HatchingParameters(
-#         hatch_spacing=0.12,
-#         hatch_length=1000,
-#         scan_angle=cube_scan_angle,
-#         generation_origin=dyn.Vector2(cube.world_limits.min.x,cube.world_limits.max.y),
-#         fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
-#         fill_vector=dyn.Vector2(cube_fill_vec[0],cube_fill_vec[1]),
-#         fill_to_perimeter=2
-#     )
+    # Set up the gas flow constraints
+    cube_angle_raw = math.radians(315)
+    cube_scan_angle, cube_fill_vec = ctx.gas_flow_compensation(hatch_angle=cube_angle_raw,gas_flow_vector=gasflow, unit_hatch_vector=hatch_unit_vec,angle_limit=math.pi)
+    cube_hatching = dyn.HatchingParameters(
+        hatch_spacing=0.12,
+        hatch_length=1000,
+        scan_angle=cube_scan_angle,
+        generation_origin=dyn.Vector2(cube.world_limits.min.x,cube.world_limits.max.y),
+        fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
+        fill_vector=dyn.Vector2(cube_fill_vec[0],cube_fill_vec[1]),
+        fill_to_perimeter=2
+    )
 
-#     cyl_angle_raw = layer_idx * cylinder_rotate_per_layer
-#     cyl_scan_angle, cyl_fill_vec = ctx.gas_flow_compensation(hatch_angle=cyl_angle_raw,gas_flow_vector=gasflow, unit_hatch_vector=hatch_unit_vec,angle_limit=math.pi)
+    cyl_angle_raw = layer_idx * cylinder_rotate_per_layer
+    cyl_scan_angle, cyl_fill_vec = ctx.gas_flow_compensation(hatch_angle=cyl_angle_raw,gas_flow_vector=gasflow, unit_hatch_vector=hatch_unit_vec,angle_limit=math.pi)
     
-#     cyl_scan_angle = constraint_to_allowed_windows(cyl_scan_angle)
-#     cyl_hatching = dyn.HatchingParameters(
-#         hatch_spacing=0.1,
-#         hatch_length=1000,
-#         scan_angle=cyl_scan_angle,
-#         generation_origin=dyn.Vector2(0,0),
-#         fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
-#         fill_vector=dyn.Vector2(cyl_fill_vec[0],cyl_fill_vec[1]),
-#         fill_to_perimeter=2
-#     )
+    cyl_scan_angle = constraint_to_allowed_windows(cyl_scan_angle)
+    cyl_hatching = dyn.HatchingParameters(
+        hatch_spacing=0.1,
+        hatch_length=1000,
+        scan_angle=cyl_scan_angle,
+        generation_origin=dyn.Vector2(0,0),
+        fill_option=dyn.FillOption.FILL_ALONG_VECTOR,
+        fill_vector=dyn.Vector2(cyl_fill_vec[0],cyl_fill_vec[1]),
+        fill_to_perimeter=2
+    )
 
-#     # Set up the hatches
-#     ctx.hatch_fragments(fragments=cylinder_left_frags,hatching_params=cyl_hatching)
-#     ctx.hatch_fragments(fragments=cube_frags, hatching_params=cube_hatching)
-#     ctx.hatch_fragments(fragments=cylinder_right_frags, hatching_params=cyl_hatching)
+    # Set up the hatches
+    ctx.hatch_fragments(fragments=cylinder_left_frags,hatching_params=cyl_hatching)
+    ctx.hatch_fragments(fragments=cube_frags, hatching_params=cube_hatching)
+    ctx.hatch_fragments(fragments=cylinder_right_frags, hatching_params=cyl_hatching)
 
-#     writer.write_fragments(fragments=cylinder_left_frags)
-#     writer.write_fragments(fragments=cube_frags)
-#     writer.write_fragments(fragments=cylinder_right_frags)
+    writer.write_fragments(fragments=cylinder_left_frags)
+    writer.write_fragments(fragments=cube_frags)
+    writer.write_fragments(fragments=cylinder_right_frags)
 
-#     writer.write_perimeters(perimeters=perimeters) ###maybe recomment out?
+    writer.write_perimeters(perimeters=perimeters) ###maybe recomment out?
     
-# print("Initializing EOS API!!!")
-# # ip_address = "169.254.45.145"  # available if streaming directly to the EOS M290 (host=my_ip)
-# ip_address = "172.27.172.1"
+print("Initializing EOS API!!!")
+# ip_address = "169.254.45.145"  # available if streaming directly to the EOS M290 (host=my_ip)
+ip_address = "172.27.172.1"
 
-# eos_gen = dyn.target_machine.start_task_generation(
-#          dyn.OnlineTaskGeneration(machine_ip=ip_address, should_download=True))
+eos_gen = dyn.target_machine.start_task_generation(
+         dyn.OnlineTaskGeneration(machine_ip=ip_address, should_download=True))
 
-# eos_gen = dyn.target_machine.start_task_generation(
-#     dyn.OfflineTaskGeneration(machine_config_load_path=local_config_path))
+eos_gen = dyn.target_machine.start_task_generation(
+    dyn.OfflineTaskGeneration(machine_config_load_path=local_config_path))
 
-# eos_gen.load_material_set(material_file)
+eos_gen.load_material_set(material_file)
+
+part_exposure_set(part, "_DyndriteDemoDefault")
+core_bs = toolpather.create_build_style(eos_params=dyn.EosToolParameters(exposure_set=part_exposure_set))
 
 
-# editor = dyn.target_machine.eos_parameters_editor
-# # Load
-# editor.open_material_set(material_file)
+print(f"Loaded: {editor.material_set_path}")
 
-# print(f"Loaded: {editor.material_set_path}")
+output_path = os.path.join(os.getcwd(), 'ThermalLensingTests1', 'ThermalLensing.sli')
 
-# directory = "C:/Users/Public/Documents/Dyndrite"
-# filepath = os.path.join(directory, "Dyn_TL_EOS.sli")
+vp.slicing_thickness=0.3
+vp.slicing_resolution=dyn.Vector2(0.03,0.03)
 
-# vp.slicing_thickness=0.3
-# vp.slicing_resolution=dyn.Vector2(0.03,0.03)
-
-# vp.finalize()
+vp.finalize()
 
 # vp.slice_all(
 #     writers=dyn.EosToolpathWriter(
